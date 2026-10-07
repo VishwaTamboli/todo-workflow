@@ -15,6 +15,27 @@ router.get("/", (req, res) => {
   res.status(200).json(todos);
 });
 
+router.get("/metrics", (req, res) => {
+  const byPriority = { low: 0, medium: 0, high: 0 };
+  let completed = 0;
+
+  for (const todo of todos) {
+    if (todo.completed) {
+      completed += 1;
+    }
+    if (isValidPriority(todo.priority)) {
+      byPriority[todo.priority] += 1;
+    }
+  }
+
+  res.status(200).json({
+    total: todos.length,
+    completed,
+    incomplete: todos.length - completed,
+    byPriority,
+  });
+});
+
 router.get("/:id", (req, res) => {
   const todo = todos.find((t) => t.id === Number(req.params.id));
 

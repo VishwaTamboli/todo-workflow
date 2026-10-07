@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Snake</title>
+  <style>
+    body { background: #1e1e1e; color: #eee; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+    canvas { background: #000; margin-top: 16px; border: 2px solid #555; }
+  </style>
+</head>
+<body>
+  <h1>Snake</h1>
+  <p>Score: <span id="score">0</span> — use arrow keys, press Space to restart</p>
+  <canvas id="game" width="400" height="400"></canvas>
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const size = 20;
+    let snake, dir, food, score, alive, timer;
+
+    function reset() {
+      snake = [{ x: 10, y: 10 }];
+      dir = { x: 1, y: 0 };
+      score = 0;
+      alive = true;
+      scoreEl.textContent = score;
+      placeFood();
+    }
+
+    function placeFood() {
+      do {
+        food = { x: Math.floor(Math.random() * 20), y: Math.floor(Math.random() * 20) };
+      } while (snake.some(s => s.x === food.x && s.y === food.y));
+    }
+
+    function step() {
+      if (!alive) return;
+      const head = { x: snake[0].x + dir.x, y: snake[0].y + dir.y };
+      if (head.x < 0 || head.x >= 20 || head.y < 0 || head.y >= 20 ||
+          snake.some(s => s.x === head.x && s.y === head.y)) {
+        alive = false;
+        return;
+      }
+      snake.unshift(head);
+      if (head.x === food.x && head.y === food.y) {
+        score++;
+        scoreEl.textContent = score;
+        placeFood();
+      } else {
+        snake.pop();
+      }
+    }
+
+    function draw() {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'red';
+      ctx.fillRect(food.x * size, food.y * size, size - 1, size - 1);
+      ctx.fillStyle = 'lime';
+      snake.forEach(s => ctx.fillRect(s.x * size, s.y * size, size - 1, size - 1));
+      if (!alive) {
+        ctx.fillStyle = '#fff';
+        ctx.font = '24px sans-serif';
+        ctx.fillText('Game Over — press Space', 60, 200);
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === ' ') { reset(); return; }
+      const map = { ArrowUp: { x: 0, y: -1 }, ArrowDown: { x: 0, y: 1 }, ArrowLeft: { x: -1, y: 0 }, ArrowRight: { x: 1, y: 0 } };
+      const d = map[e.key];
+      if (d && (d.x !== -dir.x || d.y !== -dir.y)) dir = d;
+    });
+
+    reset();
+    setInterval(() => { step(); draw(); }, 120);
+  </script>
+</body>
+</html>

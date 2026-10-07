@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Flappy Bird</title>
+  <style>
+    body { background: #70c5ce; margin: 0; display: flex; flex-direction: column; align-items: center; font-family: sans-serif; touch-action: manipulation; }
+    canvas { background: #70c5ce; margin-top: 12px; border: 2px solid #333; max-width: 100vw; max-height: 80vh; }
+  </style>
+</head>
+<body>
+  <p>Score: <span id="score">0</span> — Space / click / tap to flap</p>
+  <canvas id="game" width="400" height="600"></canvas>
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+
+    const W = canvas.width, H = canvas.height;
+    const GRAVITY = 0.4, FLAP = -7, SPEED = 2, GAP = 150, PIPE_W = 50, SPAWN_EVERY = 90;
+
+    let bird, pipes, score, state, frames;
+
+    function reset() {
+      bird = { x: 80, y: H / 2, vy: 0, r: 12 };
+      pipes = [];
+      score = 0;
+      frames = 0;
+      state = 'ready';
+      scoreEl.textContent = score;
+    }
+
+    function flap() {
+      if (state === 'ready') state = 'playing';
+      if (state === 'gameover') { reset(); state = 'playing'; return; }
+      bird.vy = FLAP;
+    }
+
+    function spawnPipe() {
+      const top = 60 + Math.random() * (H - GAP - 160);
+      pipes.push({ x: W, top, passed: false });
+    }
+
+    function step() {
+      if (state !== 'playing') return;
+      frames++;
+      bird.vy += GRAVITY;
+      bird.y += bird.vy;
+
+      if (frames % SPAWN_EVERY === 1) spawnPipe();
+      pipes.forEach(p => p.x -= SPEED);
+      pipes = pipes.filter(p => p.x + PIPE_W > 0);
+
+      pipes.forEach(p => {
+        if (!p.passed && p.x + PIPE_W < bird.x) {
+          p.passed = true;
+          score++;
+          scoreEl.textContent = score;
+        }
+      });
+
+      const hitGround = bird.y + bird.r >= H - 40;
+      const hitCeil = bird.y - bird.r <= 0;
+      const hitPipe = pipes.some(p =>
+        bird.x + bird.r > p.x && bird.x - bird.r < p.x + PIPE_W &&
+        (bird.y - bird.r < p.top || bird.y + bird.r > p.top + GAP));
+
+      if (hitGround || hitCeil || hitPipe) state = 'gameover';
+    }
+
+    function draw() {
+      ctx.fillStyle = '#70c5ce';
+      ctx.fillRect(0, 0, W, H);
+
+      ctx.fillStyle = '#4caf50';
+      pipes.forEach(p => {
+        ctx.fillRect(p.x, 0, PIPE_W, p.top);
+        ctx.fillRect(p.x, p.top + GAP, PIPE_W, H - p.top - GAP - 40);
+      });
+
+      ctx.fillStyle = '#8bc34a';
+      ctx.fillRect(0, H - 40, W, 40);
+
+      ctx.fillStyle = '#ffeb3b';
+      ctx.beginPath();
+      ctx.arc(bird.x, bird.y, bird.r, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (state === 'ready') {
+        ctx.fillStyle = '#fff';
+        ctx.font = '20px sans-serif';
+        ctx.fillText('Press Space / tap to start', 60, H / 2 - 40);
+      }
+      if (state === 'gameover') {
+        ctx.fillStyle = '#fff';
+        ctx.font = '28px sans-serif';
+        ctx.fillText('Game Over', 130, H / 2 - 20);
+        ctx.font = '18px sans-serif';
+        ctx.fillText('Score: ' + score, 160, H / 2 + 10);
+        ctx.fillText('Tap or Space to restart', 105, H / 2 + 40);
+      }
+    }
+
+    document.addEventListener('keydown', e => { if (e.code === 'Space') { e.preventDefault(); flap(); } });
+    canvas.addEventListener('mousedown', flap);
+    canvas.addEventListener('touchstart', e => { e.preventDefault(); flap(); }, { passive: false });
+
+    reset();
+    setInterval(() => { step(); draw(); }, 1000 / 60);
+  </script>
+</body>
+</html>
